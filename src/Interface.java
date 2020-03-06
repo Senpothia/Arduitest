@@ -51,51 +51,88 @@ public class Interface extends javax.swing.JFrame {
     
     public void connect(){
         
-        CommPortIdentifier portID=null;
+         CommPortIdentifier portID=null;
         Enumeration portEnum=CommPortIdentifier.getPortIdentifiers();
         
         while(portEnum.hasMoreElements()){
-            CommPortIdentifier actualPuertoID=(CommPortIdentifier) portEnum.nextElement();
-            if(PORT.equals(actualPuertoID.getName())){
-                portID=actualPuertoID;
+            CommPortIdentifier actualPortID=(CommPortIdentifier) portEnum.nextElement();
+            if(PORT.equals(actualPortID.getName())){
+                portID=actualPortID;
                 break;
             }
         }
         
         if(portID==null){
-            montrerError("Connexion échouée");
-            System.exit(ERROR);
+            montrerError("Connexion impossible. Vérifier les paramètres de connexion");
+            
         }
         
         try{
             serialPort = (SerialPort) portID.open(this.getClass().getName(), TIMEOUT);
-            //Paramètres port série
+            //Paramètre port série
             
             serialPort.setSerialPortParams(DATA_RATE, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE);
             
+            input = new BufferedReader(new InputStreamReader(serialPort.getInputStream()));
             output = serialPort.getOutputStream();
-        } catch(Exception e){
+            
+            //input = new BufferedReader(new InputStreamReader(serialPort.getInputStream()));
+        
+            serialPort.addEventListener(this);
+            serialPort.notifyOnDataAvailable(true);
+        
+        } 
+        
+           
+        
+        catch(Exception e){
             montrerError(e.getMessage());
-            System.exit(ERROR);
+            //System.exit(ERROR);
             
         }
     }
     
-    private void envoyerData(String data){
-        try{
-            output.write(data.getBytes());
-        } catch(Exception e){
-            montrerError("ERROR");
-            System.exit(ERROR);
-        }
+    
+    public synchronized void close() {
+        
+		if (serialPort != null) {
+			serialPort.removeEventListener();
+			serialPort.close();
+		}
+	}
     
     
-    }
     
-     public void montrerError(String mensaje){
-        JOptionPane.showMessageDialog(this, mensaje, "ERROR", JOptionPane.ERROR_MESSAGE);
-    }
-
+    public  void serialEvent(SerialPortEvent oEvent) {
+		if (oEvent.getEventType() == SerialPortEvent.DATA_AVAILABLE) {
+                    
+			try {
+                         
+                             inputLine=input.readLine();
+                            
+                             
+                             if (Test<9){  // Traitement des trames reçues
+                             
+                             Indicateur.setText(inputLine);  // Affichage dans la ligne de texte
+                             System.out.println(Test+": "+inputLine);  // Affichage à la console
+                             
+                             
+                             
+                             
+                             }
+                            
+			} 
+                        
+                        catch (Exception e) {   // Traitement des exceptions
+                            
+				System.err.println(e.toString());
+			}
+                        
+                            analyse(Test, inputLine);  // Analyse des résultats reçus dans la trame
+                        
+		}
+		
+	
 
     /**
      * This method is called from within the constructor to initialize the form.
